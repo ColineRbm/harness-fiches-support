@@ -4,7 +4,7 @@ from rich.console import Console
 from rich.markdown import Markdown
 from rich.prompt import Prompt
 
-from assistant import client, conversation
+from assistant import client, conversation, outils
 from assistant.configuration import (
     ConfigurationInvalide,
     charger_configuration,
@@ -51,7 +51,9 @@ def lancer(verifier=False):
     )
     while True:
         try:
-            saisie = Prompt.ask("\nToi").strip()
+            saisie = Prompt.ask(  # équivalent d'un input avec la bibliothèque Rich
+                "\nToi"
+            ).strip()  # méthode str pour enlever les espaces avant/après
         except (EOFError, KeyboardInterrupt):  # l’une ou l’autre : Ctrl+D ou Ctrl+C
             return 0
         if saisie == "/quitter":
@@ -63,7 +65,16 @@ def lancer(verifier=False):
         if not saisie:
             continue
         question = saisie
-        # À faire (étape 3) : /joindre <fiche.md> <question> joint la fiche à la question.
+        # rajouter un espace à la fin pour rendre le mot unique
+        if saisie.startswith("/joindre "):
+            cmd = saisie.split()
+            nom = cmd[1]
+            texte = " ".join(cmd[2:])
+            try:
+                question = conversation.joindre_fiche(nom, texte, limites)
+            except outils.AccesRefuse as erreur:
+                signaler(erreur)
+                continue
         signaler("Le service réfléchit…")
         try:
             reponse = conversation.poser(
