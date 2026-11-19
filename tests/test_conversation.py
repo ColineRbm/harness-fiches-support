@@ -77,3 +77,9 @@ def test_panne_leve_service_indisponible(limites, erreur, mot):
 # je dois comparer la réponse de .poser à ce que j'attends, donc j'enregistre la réponse de .poser dans "reponse" et je déclare "attendu" avec une phrase bateau
 # je passe donc mon "attendu" à "texte" dans la liste de ServiceSimule
 # j'utilise un assert pour comparer la reponse et l'attendu.
+
+
+def test_joint_la_fiche_a_la_question(limites):
+    texte = conversation.joindre_fiche("modifier-taux-tva.md", "Résume.", limites)
+    assert "Résume." in texte
+    assert "# Modifier le taux de TVA" in texte
