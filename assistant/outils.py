@@ -1,6 +1,7 @@
 """Outils proposés au modèle : lire et écrire une fiche, dans les limites fixées."""
 
 from pathlib import Path
+import json
 
 DEFINITIONS = [
     {
@@ -63,6 +64,8 @@ def lire_fiche(nom, limites):
     # ### Conversions courantes de Octet à Kilo-octets (Ko) : *`taille_octets / 1024`* -> donc * 1024
     fiche = chemin_autorise(nom, limites)
     taille_max_octet = limites["taille_max_ko"] * 1024
+    if not fiche.is_file():
+        raise AccesRefuse(f"Accès refusé à '{nom}' : le fichier n'existe pas.")
     if fiche.stat().st_size > taille_max_octet:
         raise AccesRefuse(
             f"Accès refusé à '{nom}' : le fichier dépasse la limite {limites['taille_max_ko']} Ko."
@@ -78,6 +81,19 @@ def ecrire_fiche(nom, contenu, limites, confirmer):
 
 def executer(appel, limites, confirmer):
     """Exécute un appel d’outil du modèle et renvoie le texte de son résultat, ou lève AccesRefuse."""
-    # À faire (étape 3) : lire les arguments JSON de appel.function.arguments,
-    # puis lancer l’outil nommé appel.function.name ; tout appel invalide est refusé.
-    raise NotImplementedError("Étape 3 : executer")
+    nom_outil = appel.function.name
+    try:
+        arguments_outil = json.loads(appel.function.arguments)
+    except json.JSONDecodeError:
+        raise AccesRefuse(
+            "Arguments illisibles : renvoyer l'appel avec un JSON lisible."
+        )
+
+    if nom_outil == "lire_fiche":
+        # est-ce que la clé 'nom' dans arguments_outil existe ?
+        if "nom" not in arguments_outil:
+            raise AccesRefuse(
+                "Argument 'nom' manquant : indiquer le nom de la fiche à lire."
+            )
+        return lire_fiche(arguments_outil["nom"], limites)
+    raise AccesRefuse(f"Outil inconnu : {nom_outil}.")
