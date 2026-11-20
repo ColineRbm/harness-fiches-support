@@ -33,11 +33,27 @@ def poser(question, messages, service, modele, limites, confirmer, signaler):
     signaler(texte) affiche une opération ou un refus à l’utilisateur.
     """
     messages.append({"role": "user", "content": question})
-    reponse = client.envoyer(service, modele, messages)
-    texte = reponse.choices[0].message.content
+    reponse = client.envoyer(service, modele, messages, outils.DEFINITIONS)
+    message = reponse.choices[0].message
+
+    while message.tool_calls:
+        messages.append(message)
+        for appel in message.tool_calls:
+            try:
+                resultat = outils.executer(appel, limites, confirmer)
+                signaler(f"Outil utilisé : {appel.function.name}.")
+            except outils.AccesRefuse as erreur:
+                resultat = str(erreur)
+                signaler(resultat)
+            messages.append(
+                {"role": "tool", "tool_call_id": appel.id, "content": resultat}
+            )
+        reponse = client.envoyer(service, modele, messages, outils.DEFINITIONS)
+        message = reponse.choices[0].message
+
+    texte = message.content
     messages.append({"role": "assistant", "content": texte})
     return texte
 
 
-# À faire (étape 3) : exécuter les appels d’outil du modèle jusqu’à sa réponse finale.
 # À faire (étape 4) : arrêter la question au-delà des limites.
